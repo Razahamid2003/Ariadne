@@ -1,0 +1,26 @@
+- id: vague_lookup_guard
+  query: "Find the employee"
+  expected_status: "no_answer"
+  must_include:
+    - "Please add"
+  must_not_include:
+    - "Source 1"
+
+- id: exact_employee_lookup
+  query: "Find employee EMP-118"
+  expected_status: "ok"
+  must_include:
+    - "EMP-118"
+  expected_citations: true
+
+- id: unavailable_warranty
+  query: "What is the warranty for Lenovo Legion 7 Pro?"
+  expected_status: "no_answer"
+  must_include:
+    - "indexed data"
+
+- id: tabular_evidence
+  query: "Generate a table of employees in Automation department with current loads"
+  expected_citations: true
+  must_include:
+    - "|"

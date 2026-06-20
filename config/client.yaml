@@ -1,0 +1,232 @@
+# Main configuration for RAGS PoC.
+#
+# Current PoC stance:
+#   Demonstration runs on the ZenithAI laptop/workstation using local equivalent
+#   components. Future client/full-scale deployment can point model endpoints to
+#   client-provided modified vLLM services once details are available.
+
+deployment:
+  mode: "local"
+
+app:
+  name: "RAGS PoC"
+  host: "127.0.0.1"
+  port: 8080
+  offline_mode: true
+
+# ---------------------------------------------------------------------------
+# MODEL SWAP: change `model` below to any model your local Ollama/vLLM serves
+# (e.g. "llama3.1:8b" -> "qwen2.5:14b-instruct"). No code change required.
+# The whole app talks to one OpenAI-compatible endpoint via base_url.
+# ---------------------------------------------------------------------------
+llm:
+  provider: "openai_compatible"
+  base_url: "http://localhost:11434/v1"
+  model: "llama3.1:8b"
+  temperature: 0.1
+  max_tokens: 700
+  timeout_seconds: 120
+
+paths:
+  input_data: "data/input"
+  processed_data: "data/processed"
+  metadata_db: "storage/metadata.db"
+  logs: "storage/logs"
+
+ingestion:
+  max_chars: 1200
+  overlap_chars: 150
+  # ---------------------------------------------------------------------------
+  # Auto-metadata (schema-driven). At ingestion, the local LLM classifies each
+  # document into a type, stored as metadata. Used as a SOFT retrieval signal
+  # and as generation context. Costs one LLM call per document, paid once.
+  # Re-ingest after changing these fields. Disable -> falls back to no signal.
+  # The field schema below is a "restrict to defined values" schema:
+  # editable schema, not hardcoded logic.
+  # ---------------------------------------------------------------------------
+  auto_metadata:
+    enabled: true
+    sample_chars: 4000
+    fields:
+      - name: document_type
+        description: "The kind of document this is, judged by its structure and purpose (not isolated words)."
+        fallback: other
+        allowed_values: [resume, form, tabular_record, product_brochure, report, correspondence, other]
+        value_descriptions:
+          resume: "A CV or personal profile of ONE individual: education, experience, skills."
+          form: "A fill-in form such as an application, account-opening, or registration document."
+          tabular_record: "A row/column data export such as an employee list, asset register, or inventory."
+          product_brochure: "Marketing or sales material describing a product, system, or company."
+          report: "A report, memo, study, or analysis."
+          correspondence: "A letter, email, notice, or similar message."
+          other: "Anything that does not clearly fit the other types."
+
+ocr:
+  enabled: true
+  provider: "tesseract"
+  tesseract_cmd: "C:/Program Files/Tesseract-OCR/tesseract.exe"
+  languages: "eng"
+  min_text_chars: 20
+  psm: 6
+  ocr_images: true
+  ocr_pdf_pages: true
+  max_images_per_run: 50
+  max_pdf_pages_per_run: 100
+
+vision:
+  enabled: true
+  mode: "caption"
+  provider: "ollama"
+  base_url: "http://localhost:11434"
+  model: "qwen2.5vl:7b"
+  timeout_seconds: 300
+  caption_images: true
+  caption_pdf_pages: true
+  max_images_per_run: 25
+  max_pdf_pages_per_run: 25
+
+archives:
+  enabled: true
+  extract_dir: "data/input/_extracted"
+  keep_original_metadata: true
+
+security:
+  # When false (default), a runtime egress guard blocks every outbound
+  # connection to any non-loopback / non-LAN host (provable zero-egress).
+  allow_external_calls: false
+  log_full_prompts: false
+  approved_lan_hosts: []
+
+# For a fully air-gapped client: pre-download these models once on a
+# connected machine, copy them into the project, and set the paths below to
+# local folders (e.g. "./models/embeddings"). With the egress guard on, any
+# attempt to fetch from a model hub is blocked.
+embeddings:
+  provider: "sentence_transformers"
+  model_name_or_path: "sentence-transformers/all-MiniLM-L6-v2"
+  device: "cuda"
+  batch_size: 32
+
+vector_index:
+  index_dir: "storage/vector"
+  embeddings_file: "embeddings.npy"
+  metadata_file: "metadata.jsonl"
+
+# retrieval settings.
+retrieval:
+  keyword_table: "chunks_fts"
+  vector_top_k: 25
+  keyword_top_k: 25
+  final_top_k: 8
+  min_score: 0.05        # normalized 0..1 tail-trim; lowered from 0.12 to avoid over-trimming after metadata nudge renormalizes scores
+
+  # Query vocabulary expansions (additive, not replacement).
+  # Add informal/abbreviated terms that users type but documents don't contain.
+  # Keys are matched case-insensitively on word boundaries.
+  query_expansions:
+    "fresh grad": "recently graduated BS Computer Science LUMS"
+    "fresh graduate": "recently graduated BS Computer Science"
+    "recent graduate": "recently graduated BS Computer Science LUMS"
+    "grad": "graduate"
+    "ml engineer": "machine learning engineer"
+    "ai ml": "artificial intelligence machine learning MLOps RAG NLP"
+    "ai or ml": "artificial intelligence machine learning MLOps RAG"
+    "ai and ml": "artificial intelligence machine learning"
+    "nlp": "natural language processing"
+    "llm": "large language model"
+    "rag": "retrieval augmented generation"
+    "mlops": "machine learning operations"
+    "cv": "curriculum vitae resume profile"
+    "poc": "proof of concept"
+    "aviation specialist": "aviation engineer pilot UAV UAS aerospace"
+    "aviation specialists": "aviation engineer pilot UAV UAS aerospace"
+    "looks like a recent graduate": "recently graduated BS Computer Science LUMS curriculum vitae"
+    "indexed person": "employee candidate profile curriculum vitae"
+    "currently available": "available shift availability"
+    "availability": "available from shift next shift"
+  vector_weight: 0.60
+  keyword_weight: 0.40
+  exact_match_boost: 0.20
+  # Fusion: "rrf" (Reciprocal Rank Fusion, recommended) or "weighted".
+  fusion_method: "rrf"
+  rrf_k: 60
+  # No-answer gate thresholds. These act on ABSOLUTE relevance (raw cosine /
+  # cross-encoder score), not on normalized rank, so a batch of irrelevant
+  # chunks correctly yields low confidence and the system refuses to answer.
+  # Tune during PoC validation for your embedding model.
+  confidence_high_score: 0.55
+  confidence_medium_score: 0.45
+  # ---------------------------------------------------------------------------
+  # Metadata leg of retrieval (automatic mode). When enabled, the query
+  # is classified (one small LLM call) into the document type(s) it targets, and
+  # matching chunks get a SOFT additive nudge. Never a hard filter: a wrong guess
+  # can only fail to help, never hide a document. document_types must match the
+  # auto_metadata allowed_values above.
+  # ---------------------------------------------------------------------------
+  metadata_signal:
+    enabled: true
+    query_intent_classification: true
+    document_types: [resume, form, tabular_record, product_brochure, report, correspondence, other]
+  document_type_nudge_weight: 0.08  # gentler nudge to avoid compressing the non-matching set during renormalization
+  rerank_enabled: true
+  rerank_model_name_or_path: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  rerank_candidate_pool: 30
+  rerank_device: "auto"
+  deduplicate: true
+
+  record_type_weights:
+    pdf_page: 1.00
+    csv_row: 1.00
+    xlsx_row: 1.00
+    docx_section: 0.95
+    pptx_slide: 0.95
+    text_document: 1.00
+    pdf_page_ocr_text: 0.90
+    image_ocr_text: 0.85
+    pdf_page_vision_caption: 0.75
+    image_caption: 0.70
+    pdf_page_image_metadata: 0.35
+    image_metadata: 0.30
+
+# file lifecycle settings.
+file_tracking:
+  enabled: true
+  work_dir: "storage/incremental_work"
+  track_unsupported: true
+  auto_rebuild_keyword_index: true
+  auto_rebuild_vector_index: true
+
+# RAG answer-generation settings.
+rag:
+  max_context_chunks: 6
+  max_context_chars: 8000
+  max_chars_per_chunk: 1800
+  drop_vector_only_below_score: 0.05
+  # Citation salvage: if the model writes a grounded answer but forgets the
+  # [S#] tags, attribute its sentences back to retrieved chunks by lexical
+  # overlap before falling back to no-answer. Honest: only cites retrieved
+  # chunks that lexically support the sentence.
+  citation_salvage_enabled: true
+  citation_salvage_min_overlap: 0.5
+  min_retrieval_confidence: "medium"   # low | medium | high
+  require_citations: true
+  allow_no_answer: true
+  retry_on_invalid_citations: true
+  answer_temperature: 0.1
+  answer_max_tokens: 700
+  no_answer_message: "The indexed data does not contain enough information to answer this reliably."
+  evidence_span_enabled: true
+  evidence_span_window_sentences: 2
+  evidence_span_max_chars: 900
+  deterministic_tables_enabled: true
+  deterministic_table_max_rows: 40
+  claim_verification_enabled: true
+  claim_verification_min_overlap: 0.18
+
+
+# local/LAN web runtime settings.
+runtime:
+  max_chat_concurrency: 3
+  max_search_concurrency: 6
+  max_admin_jobs: 1
+  reject_chat_during_rebuild: false

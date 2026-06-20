@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="Ariadne — Follow the thread">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16202a"/>
+      <stop offset="0.55" stop-color="#101820"/>
+      <stop offset="1" stop-color="#0c1218"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#cda24e" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#cda24e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8d6a8"/>
+      <stop offset="1" stop-color="#b9863a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="320" fill="url(#bg)"/>
+  <circle cx="250" cy="150" r="190" fill="url(#glow)"/>
+
+  <!-- Labyrinth mark -->
+  <g transform="translate(170 88) scale(1.55)" fill="none" stroke="url(#gold)" stroke-width="3.4" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M50 50 L50 38 L62 38 L62 62 L38 62 L38 30 L70 30 L70 70 L30 70 L30 22 L78 22 L78 78 L22 78 L22 14"/>
+  </g>
+  <circle cx="247.5" cy="165.5" r="6" fill="#f3ead6"/>
+
+  <!-- Wordmark -->
+  <text x="400" y="158" font-family="'Palatino Linotype','Book Antiqua',Palatino,Georgia,serif" font-size="92" letter-spacing="14" fill="#f3ead6">ARIADNE</text>
+  <text x="404" y="206" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="21" letter-spacing="7" fill="#cda24e">FOLLOW THE THREAD · NAVIGATE UNCERTAINTY</text>
+
+  <!-- Greek-key meander frieze -->
+  <g fill="none" stroke="#cda24e" stroke-width="2.2" opacity="0.65">
+    <path d="M0 286 H1200 M0 314 H1200"/>
+    <g stroke-width="2">
+      <!-- repeating key drawn across the width -->
+      <g id="key">
+        <path d="M6 312 V292 H40 V308 H18 V300 H30"/>
+      </g>
+    </g>
+  </g>
+  <g fill="none" stroke="#cda24e" stroke-width="2" opacity="0.55">
+    <path d="M0 312 V292 H34 V308 H12 V300 H24" transform="translate(0,0)"/>
+  </g>
+  <!-- frieze tiles -->
+  <g fill="none" stroke="#cda24e" stroke-width="2" opacity="0.6">
+    <path d="M6 312 V292 H40 V308 H18 V300 H30"/>
+    <path d="M50 312 V292 H84 V308 H62 V300 H74"/>
+    <path d="M94 312 V292 H128 V308 H106 V300 H118"/>
+    <path d="M138 312 V292 H172 V308 H150 V300 H162"/>
+    <path d="M182 312 V292 H216 V308 H194 V300 H206"/>
+    <path d="M226 312 V292 H260 V308 H238 V300 H250"/>
+    <path d="M270 312 V292 H304 V308 H282 V300 H294"/>
+    <path d="M314 312 V292 H348 V308 H326 V300 H338"/>
+    <path d="M358 312 V292 H392 V308 H370 V300 H382"/>
+    <path d="M402 312 V292 H436 V308 H414 V300 H426"/>
+    <path d="M446 312 V292 H480 V308 H458 V300 H470"/>
+    <path d="M490 312 V292 H524 V308 H502 V300 H514"/>
+    <path d="M534 312 V292 H568 V308 H546 V300 H558"/>
+    <path d="M578 312 V292 H612 V308 H590 V300 H602"/>
+    <path d="M622 312 V292 H656 V308 H634 V300 H646"/>
+    <path d="M666 312 V292 H700 V308 H678 V300 H690"/>
+    <path d="M710 312 V292 H744 V308 H722 V300 H734"/>
+    <path d="M754 312 V292 H788 V308 H766 V300 H778"/>
+    <path d="M798 312 V292 H832 V308 H810 V300 H822"/>
+    <path d="M842 312 V292 H876 V308 H854 V300 H866"/>
+    <path d="M886 312 V292 H920 V308 H898 V300 H910"/>
+    <path d="M930 312 V292 H964 V308 H942 V300 H954"/>
+    <path d="M974 312 V292 H1008 V308 H986 V300 H998"/>
+    <path d="M1018 312 V292 H1052 V308 H1030 V300 H1042"/>
+    <path d="M1062 312 V292 H1096 V308 H1074 V300 H1086"/>
+    <path d="M1106 312 V292 H1140 V308 H1118 V300 H1130"/>
+    <path d="M1150 312 V292 H1184 V308 H1162 V300 H1174"/>
+    <path d="M1194 312 V292 H1228 V308 H1206 V300 H1218"/>
+  </g>
+</svg>

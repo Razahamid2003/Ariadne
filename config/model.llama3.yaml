@@ -1,0 +1,32 @@
+# Client-side Llama 3 configuration template.
+#
+# Purpose:
+#   This file demonstrates the intended final swap to the client's Llama 3
+#   local model. The code should not change when this config is used.
+#
+# Usage:
+#   python scripts/test_llm.py --config config/model.llama3.yaml
+
+app:
+  name: "RAGS PoC"
+  host: "127.0.0.1"
+  port: 8080
+  offline_mode: true
+
+llm:
+  provider: "openai_compatible"
+  base_url: "http://localhost:11434/v1"
+  model: "llama3"
+  temperature: 0.1
+  max_tokens: 700
+  timeout_seconds: 120
+
+paths:
+  input_data: "data/input"
+  processed_data: "data/processed"
+  metadata_db: "storage/metadata.db"
+  logs: "storage/logs"
+
+security:
+  allow_external_calls: false
+  log_full_prompts: false

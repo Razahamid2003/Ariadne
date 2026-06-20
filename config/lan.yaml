@@ -1,0 +1,39 @@
+deployment:
+  mode: "lan"
+
+app:
+  name: "RAGS PoC"
+  host: "0.0.0.0"
+  port: 8080
+  offline_mode: true
+
+llm:
+  provider: "openai_compatible"
+  base_url: "http://localhost:11434/v1"
+  model: "llama3.1:8b"
+  temperature: 0.1
+  max_tokens: 700
+  timeout_seconds: 120
+
+paths:
+  input_data: "data/input"
+  processed_data: "data/processed"
+  metadata_db: "storage/metadata.db"
+  logs: "storage/logs"
+
+ingestion:
+  max_chars: 1200
+  overlap_chars: 150
+
+vision:
+  enabled: false
+  mode: "catalog"
+
+archives:
+  enabled: true
+  extract_dir: "data/input/_extracted"
+  keep_original_metadata: true
+
+security:
+  allow_external_calls: false
+  log_full_prompts: false

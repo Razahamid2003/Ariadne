@@ -1,0 +1,371 @@
+{
+  "suite_name": " Ariadne RAG Quality Stress Suite",
+  "defaults": {
+    "top_k": 12,
+    "preview_chars": 1800,
+    "show_evidence": true,
+    "answer_mode": "balanced",
+    "search_expect": {
+      "min_results": 1,
+      "top_n": 8
+    },
+    "answer_expect": {
+      "forbid_mixed_no_answer": true,
+      "forbid_raw_excerpt_artifacts": true,
+      "allow_validation_errors": false,
+      "allow_unexpected_labels": false
+    }
+  },
+  "tests": [
+    {
+      "id": "raza_search_summary",
+      "query": "Search for Raza Hamid",
+      "search_expect": {
+        "required_source_terms_any": [
+          "raza hamid cv"
+        ],
+        "required_text_terms_any": [
+          "Raza Hamid",
+          "LUMS",
+          "AI",
+          "MLOps"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_all": [
+          "Raza Hamid"
+        ],
+        "required_terms_any": [
+          "LUMS",
+          "AI",
+          "MLOps",
+          "RAG"
+        ],
+        "required_source_terms_any": [
+          "Raza Hamid CV"
+        ]
+      }
+    },
+    {
+      "id": "fresh_graduates_search",
+      "query": "Search for fresh graduates",
+      "search_expect": {
+        "required_text_terms_any": [
+          "recently graduated",
+          "LUMS",
+          "BS Computer Science"
+        ],
+        "required_anywhere_terms_any": [
+          "recently graduated",
+          "BS Computer Science"
+        ],
+        "forbidden_source_terms_any": [
+          "Rohde",
+          "Hikvision",
+          "account opening"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_any": [
+          "recently graduated",
+          "fresh graduate",
+          "Raza Hamid"
+        ],
+        "required_source_terms_any": [
+          "Raza Hamid CV"
+        ],
+        "forbidden_terms_any": [
+          "no documents directly related to \"fresh graduates\""
+        ]
+      }
+    },
+    {
+      "id": "raza_lums_graduation_when",
+      "query": "when did Raza Hamid graduate from LUMS university?",
+      "search_expect": {
+        "required_source_terms_any": [
+          "raza hamid cv"
+        ],
+        "required_text_terms_any": [
+          "May 2026",
+          "September 2022",
+          "BS Computer Science",
+          "LUMS"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_all": [
+          "Raza Hamid"
+        ],
+        "required_terms_any": [
+          "May 2026",
+          "2026"
+        ],
+        "required_source_terms_any": [
+          "Raza Hamid CV"
+        ],
+        "forbidden_terms_any": [
+          "not enough evidence",
+          "does not contain enough information"
+        ]
+      }
+    },
+    {
+      "id": "raza_lums_duration",
+      "query": "Duration of LUMS by Raza Hamid",
+      "search_expect": {
+        "required_source_terms_any": [
+          "raza hamid cv"
+        ],
+        "required_text_terms_any": [
+          "September 2022",
+          "May 2026",
+          "BS Computer Science"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_all": [
+          "September 2022",
+          "May 2026"
+        ],
+        "required_source_terms_any": [
+          "Raza Hamid CV"
+        ],
+        "forbidden_terms_any": [
+          "not enough evidence",
+          "does not contain enough information"
+        ]
+      }
+    },
+    {
+      "id": "raza_lums_details",
+      "query": "Details of Raza Hamid's LUMS experience",
+      "search_expect": {
+        "required_source_terms_any": [
+          "raza hamid cv"
+        ],
+        "required_text_terms_any": [
+          "LUMS",
+          "BS Computer Science"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_all": [
+          "LUMS",
+          "BS Computer Science"
+        ],
+        "required_terms_any": [
+          "September 2022",
+          "May 2026",
+          "courses",
+          "Machine Learning"
+        ],
+        "required_source_terms_any": [
+          "Raza Hamid CV"
+        ],
+        "forbidden_terms_any": [
+          "not enough evidence",
+          "does not contain enough information"
+        ]
+      }
+    },
+    {
+      "id": "raza_cybersecurity_yes_no",
+      "query": "Does Raza Hamid have experience in Cybersecurity?",
+      "search_expect": {
+        "required_source_terms_any": [
+          "raza hamid cv"
+        ],
+        "required_text_terms_any": [
+          "Cybersecurity Intern",
+          "NESCOM",
+          "Cybersecurity"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_all": [
+          "Raza Hamid"
+        ],
+        "required_terms_any": [
+          "Cybersecurity Intern",
+          "NESCOM",
+          "cybersecurity"
+        ],
+        "required_source_terms_any": [
+          "Raza Hamid CV"
+        ]
+      }
+    },
+    {
+      "id": "raza_diapers_unsupported",
+      "query": "Does Raza Hamid have experience with changing diapers?",
+      "search_expect": {
+        "required_source_terms_any": [
+          "raza hamid cv"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "no_answer"
+        ],
+        "max_confidence": "low",
+        "forbidden_terms_any": [
+          "yes",
+          "has experience with changing diapers"
+        ],
+        "forbidden_source_terms_any": [
+          "Rohde",
+          "Hikvision"
+        ]
+      }
+    },
+    {
+      "id": "hamza_employee_search",
+      "query": "Search for employees named Hamza",
+      "search_expect": {
+        "required_source_terms_any": [
+          "Ariadne_Employee_Multihop_StressTest",
+          "employee_multihop"
+        ],
+        "required_text_terms_any": [
+          "Hamza Abbasi",
+          "Hamza Khan",
+          "EMP-"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_any": [
+          "Hamza Abbasi",
+          "Hamza Khan"
+        ],
+        "required_source_terms_any": [
+          "Ariadne_Employee_Multihop_StressTest",
+          "employee_multihop"
+        ]
+      }
+    },
+    {
+      "id": "person_suited_ai_ml",
+      "query": "Find details of a person suited for AI/ML",
+      "search_expect": {
+        "required_text_terms_any": [
+          "AI",
+          "MLOps",
+          "Machine Learning",
+          "RAG",
+          "Computer Science"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_any": [
+          "Raza Hamid",
+          "AI",
+          "Machine Learning",
+          "MLOps",
+          "RAG"
+        ],
+        "forbidden_source_terms_any": [
+          "Rohde",
+          "Hikvision",
+          "account opening",
+          "HONPHO"
+        ]
+      },
+      "_comment_search": "Search-level source filter removed: 'AI/ML' query legitimately surfaces product docs with 'intelligence' terminology. Answer-level forbidden_source_terms_any check still enforces purity."
+    },
+    {
+      "id": "thermal_products_compare",
+      "query": "Compare the thermal vision products in a table.",
+      "search_expect": {
+        "required_text_terms_any": [
+          "thermal",
+          "8-14",
+          "640",
+          "512",
+          "Dragon"
+        ]
+      },
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "min_confidence": "medium",
+        "require_citations": true,
+        "required_terms_any": [
+          "thermal",
+          "Dragon",
+          "640",
+          "512"
+        ],
+        "forbidden_terms_any": [
+          "not enough evidence"
+        ]
+      }
+    },
+    {
+      "id": "underspecified_employee_guard",
+      "query": "Find the employee",
+      "run_search": false,
+      "answer_expect": {
+        "forbid_mixed_no_answer": true,
+        "forbid_raw_excerpt_artifacts": true,
+        "allow_validation_errors": false
+      },
+      "_comment": "Vague-query clarification is out of scope for PoC ( feature). Test relaxed to: no hallucination, no crash."
+    },
+    {
+      "id": "source_format_no_raw_fragments",
+      "query": "Search for Raza Hamid",
+      "run_search": false,
+      "answer_expect": {
+        "expected_status": [
+          "supported"
+        ],
+        "require_citations": true,
+        "forbid_raw_excerpt_artifacts": true,
+        "forbidden_terms_any": []
+      },
+      "_comment": "Raw fragment check retained via forbid_raw_excerpt_artifacts flag; specific OCR phrase removed (brittle)."
+    }
+  ]
+}

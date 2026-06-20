@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ariadne Operations</title>
+  <link rel="icon" href="/static/assets/favicon.svg?v=greek5" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/css/styles.css?v=greek5" />
+</head>
+<body>
+  <div class="ambient-bg" aria-hidden="true"><span></span><span></span><span></span></div>
+  <canvas id="threadCanvas" class="thread-canvas" aria-hidden="true"></canvas>
+  <div class="app-shell ariadne-shell" data-page="admin">
+    <aside class="sidebar ariadne-sidebar" id="sidebar">
+      <div class="brand-block">
+        <div class="laurel-mark" aria-hidden="true"><svg viewBox="0 0 100 100" class="laurel-svg laurel-brand" role="img" aria-label="Ariadne labyrinth"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"><path d="M50 50 L50 38 L62 38 L62 62 L38 62 L38 30 L70 30 L70 70 L30 70 L30 22 L78 22 L78 78 L22 78 L22 14"/></g><circle cx="50" cy="50" r="4.6" fill="currentColor"/></svg></div>
+        <div class="brand-text"><strong>Ariadne</strong><span>The Loom</span></div>
+      </div>
+      <nav class="nav-stack" aria-label="Loom navigation">
+        <a class="nav-item" href="/"><span class="nav-icon">●</span><em>Ask</em></a>
+        <button class="nav-item active" data-admin-view="overview" type="button"><span class="nav-icon">▣</span><em>Overview</em></button>
+        <button class="nav-item" data-admin-view="data" type="button"><span class="nav-icon">⇄</span><em>Data Weaving</em></button>
+        <button class="nav-item" data-admin-view="config" type="button"><span class="nav-icon">⚙</span><em>Loom Settings</em></button>
+        <button class="nav-item" data-admin-view="jobs" type="button"><span class="nav-icon">⋯</span><em>Running Work</em></button>
+        <button class="nav-item" data-admin-view="logs" type="button"><span class="nav-icon">≡</span><em>Past Questions</em></button>
+      </nav>
+      <div class="local-proof">
+        <span class="signal-dot"></span>
+        <div><strong>Within the walls</strong><span>The thread stays on this host or your LAN.</span></div>
+      </div>
+      <div class="sidebar-footer">
+        <button id="sidebarToggle" class="icon-button" type="button">⇤</button>
+        <button id="settingsOpen" class="soft-button" type="button">Display</button>
+      </div>
+    </aside>
+
+    <main class="main-workspace ariadne-stage">
+      <header class="workspace-header ariadne-header">
+        <div class="hero-copy">
+          <p class="eyebrow">Ariadne operations</p>
+          <h1>The Loom</h1>
+          <p class="subtitle">Refresh the thread, tend the index, and keep every path within your own walls.</p>
+        </div>
+        <div class="status-pills" id="statusPills"><span class="pill muted">Loading...</span></div>
+      </header>
+
+      <section class="admin-view active" id="admin-overview">
+        <div id="statusCards" class="metric-grid"></div>
+        <div class="section-card glass">
+          <div class="section-heading">
+            <div><p class="eyebrow">Readiness snapshot</p><h2>Is the thread ready?</h2></div>
+            <button id="refreshOverviewBtn" class="secondary-button" type="button">Refresh</button>
+          </div>
+          <p class="subtitle">Confirm the documents, excerpts, and indexes are aligned before Ariadne begins the journey.</p>
+          <details class="technical-details">
+            <summary>Technical details</summary>
+            <pre id="adminStatusJson" class="json-block">Loading...</pre>
+          </details>
+        </div>
+      </section>
+
+      <section class="admin-view" id="admin-data">
+        <div class="section-card glass">
+          <p class="eyebrow">Data lifecycle</p>
+          <h2>Renew Ariadne's memory</h2>
+          <p class="subtitle">Begin at the doorway. Ariadne will show what changed before she weaves it into the source trail.</p>
+          <div class="operation-grid">
+            <button id="planIngestBtn" class="operation-card" type="button">
+              <strong>Inspect the doorway</strong>
+              <span>See what is new, changed, missing, or unchanged.</span>
+            </button>
+            <button id="ingestBtn" class="operation-card primary-operation" type="button">
+              <strong>Weave new strands</strong>
+              <span>Add only the files that changed since the last pass.</span>
+            </button>
+            <button id="rebuildBtn" class="operation-card" type="button">
+              <strong>Retie the thread map</strong>
+              <span>Refresh name/code matching and meaning search from current excerpts.</span>
+            </button>
+            <button id="freshRebuildBtn" class="operation-card danger-operation" type="button">
+              <strong>Reweave from the beginning</strong>
+              <span>Clears generated search data and rebuilds the source trail from local files.</span>
+            </button>
+          </div>
+          <pre id="adminOutput" class="json-block friendly-output">No operation has run yet.</pre>
+        </div>
+      </section>
+
+      <section class="admin-view" id="admin-config">
+        <div class="section-card glass">
+          <div class="section-heading">
+            <div><p class="eyebrow">The loom</p><h2>Shape how Ariadne follows evidence</h2></div>
+            <div class="section-heading-actions">
+              <button id="reloadConfigBtn" class="secondary-button" type="button">Refresh view</button>
+              <button id="clearConfigBtn" class="secondary-button danger-inline" type="button">Restore baseline</button>
+              <button id="saveAdminConfigBtn" class="primary-button bronze-button" type="button">Save changes</button>
+            </div>
+          </div>
+          <p class="subtitle">Set how evidence enters, how difficult pages are read, how the index is renewed, and which local model gives Ariadne her voice. The baseline remains protected; this page only keeps a local overlay you can restore at any time.</p>
+          <div id="adminConfigContent" class="settings-content admin-config-content">Opening the loom...</div>
+          <pre id="adminConfigOutput" class="json-block friendly-output">No loom changes have been saved from this page yet.</pre>
+        </div>
+      </section>
+
+      <section class="admin-view" id="admin-jobs">
+        <div class="section-card glass">
+          <div class="section-heading">
+            <div><p class="eyebrow">Background work</p><h2>Running and recent jobs</h2></div>
+            <button id="refreshJobsBtn" class="secondary-button" type="button">Refresh</button>
+          </div>
+          <div id="jobsList" class="cards-grid"></div>
+        </div>
+      </section>
+
+      <section class="admin-view" id="admin-logs">
+        <div class="section-card glass">
+          <div class="section-heading">
+            <div><p class="eyebrow">Echoes</p><h2>Past questions</h2></div>
+            <div class="section-heading-actions"><button id="clearLogsBtn" class="secondary-button danger-inline" type="button">Clear History</button><button id="refreshLogsBtn" class="secondary-button" type="button">Refresh</button></div>
+          </div>
+          <p class="subtitle">Kept on this machine so you can retrace the path. No public analytics are used.</p>
+          <div id="queryLog" class="cards-grid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="settingsBackdrop"></div>
+  <aside class="settings-drawer" id="settingsDrawer" aria-label="Settings drawer">
+    <div class="drawer-header">
+      <div><p class="eyebrow">Shape the view</p><h2>Display</h2></div>
+      <button id="settingsClose" class="icon-button" type="button">×</button>
+    </div>
+    <div id="settingsContent" class="settings-content"></div>
+    <div class="drawer-actions">
+      <button id="resetSettings" class="secondary-button" type="button">Reset</button>
+      <button id="saveSettings" class="primary-button bronze-button" type="button">Save View</button>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/js/thread-field.js?v=greek5"></script>
+  <script src="/static/js/shared.js?v=greek5"></script>
+  <script src="/static/js/admin.js?v=greek5"></script>
+</body>
+</html>

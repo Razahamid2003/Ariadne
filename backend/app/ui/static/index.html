@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ariadne - Follow the Thread</title>
+  <meta name="description" content="Follow the thread through local evidence, source trails, and past conversations." />
+  <link rel="icon" href="/static/assets/favicon.svg?v=greek5" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/css/styles.css?v=greek5" />
+</head>
+<body>
+
+  <div id="ariadneSplash" class="ariadne-splash" aria-label="Ariadne is opening" aria-live="polite">
+    <div class="splash-inner">
+      <svg class="splash-thread" viewBox="0 0 100 100" role="img" aria-label="Ariadne">
+        <path class="laby-path" d="M50 50 L50 38 L62 38 L62 62 L38 62 L38 30 L70 30 L70 70 L30 70 L30 22 L78 22 L78 78 L22 78 L22 14"/>
+        <circle class="laby-core" cx="50" cy="50" r="4.4"/>
+      </svg>
+      <div class="splash-title" aria-hidden="true">ARIADNE</div>
+      <div class="splash-tagline" aria-hidden="true">Follow the thread</div>
+    </div>
+  </div>
+  <div class="ambient-bg" aria-hidden="true"><span></span><span></span><span></span></div>
+  <canvas id="threadCanvas" class="thread-canvas" aria-hidden="true"></canvas>
+
+  <div class="app-shell ariadne-shell" data-page="chat">
+    <aside class="sidebar ariadne-sidebar" id="sidebar">
+      <div class="brand-block ariadne-brand-block">
+        <div class="laurel-mark" aria-hidden="true"><svg viewBox="0 0 100 100" class="laurel-svg laurel-brand" role="img" aria-label="Ariadne labyrinth"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"><path d="M50 50 L50 38 L62 38 L62 62 L38 62 L38 30 L70 30 L70 70 L30 70 L30 22 L78 22 L78 78 L22 78 L22 14"/></g><circle cx="50" cy="50" r="4.6" fill="currentColor"/></svg></div>
+        <div class="brand-text">
+          <strong>Ariadne</strong>
+          <span>Follow the thread. Navigate uncertainty.</span>
+        </div>
+      </div>
+
+      <nav class="nav-stack ariadne-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="chat" type="button" title="Home">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg>
+          </span><em>Home</em>
+        </button>
+        <button class="nav-item" data-view="threads" type="button" title="Threads">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v11H8l-4 4z"/></svg>
+          </span><em>Threads</em>
+        </button>
+        <button class="nav-item" data-view="search" type="button" title="Sources">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h9l3 3v15H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+          </span><em>Sources</em>
+        </button>
+        <a class="nav-item" href="/admin" title="Admin">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/><circle cx="8" cy="5" r="1.5"/><circle cx="16" cy="12" r="1.5"/><circle cx="11" cy="19" r="1.5"/></svg>
+          </span><em>Admin</em>
+        </a>
+      </nav>
+
+      <div class="chat-history-panel">
+        <p class="sidebar-label">Recent threads</p>
+        <div id="chatList" class="chat-list" aria-label="Saved chats"></div>
+      </div>
+
+      <div class="chat-action-block">
+        <button id="newChatButton" class="new-chat-button bronze-button" type="button" title="New thread"><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><em>New Thread</em></button>
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="sidebarToggle" class="icon-button" title="Collapse sidebar" aria-label="Collapse sidebar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5v14M11 9l-3 3 3 3"/><path d="M4 5v14"/></svg></button>
+        <button id="settingsOpen" class="soft-button" type="button">Display</button>
+      </div>
+    </aside>
+
+    <main class="main-workspace ariadne-stage">
+      <div class="workspace-grid">
+        <section class="workspace-primary" id="workspacePrimary">
+          <header class="workspace-header ariadne-header reveal">
+            <div class="hero-copy">
+              <div class="laurel-hero-wrap" aria-hidden="true"><svg viewBox="0 0 100 100" class="laurel-svg laurel-hero" role="img" aria-label="Ariadne labyrinth"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"><path d="M50 50 L50 38 L62 38 L62 62 L38 62 L38 30 L70 30 L70 70 L30 70 L30 22 L78 22 L78 78 L22 78 L22 14"/></g><circle cx="50" cy="50" r="4.6" fill="currentColor"/></svg></div>
+              <h1 id="pageTitle">Ariadne</h1>
+              <p id="pageSubtitle" class="subtitle">Follow the thread. Navigate uncertainty.</p>
+              <div class="pillar-divider" aria-hidden="true">
+                <span class="pd-line"></span>
+                <svg class="pd-icon" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 22h20M8 22V9M24 22V9M11 9V8h10v1M9 9h14M10 8c0-3 2-5 6-5s6 2 6 5"/></svg>
+                <span class="pd-line"></span>
+              </div>
+              <div class="status-pills" id="statusPills">
+                <span class="pill muted">Reading the thread...</span>
+              </div>
+            </div>
+          </header>
+
+          <section class="view active" id="view-chat">
+            <form class="composer glass ariadne-composer reveal" id="chatForm" style="--d:.05s">
+              <div class="composer-input-row">
+                <span class="composer-search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+                </span>
+                <textarea id="chatQuery" rows="1" placeholder="Ask Ariadne to follow the evidence..."></textarea>
+                <button type="button" id="filterToggle" class="composer-filter-btn" aria-label="Toggle filters" title="Filters">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+                </button>
+                <button id="askButton" class="send-button bronze-send" type="submit" aria-label="Ask Ariadne">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14m0 0-5-5m5 5-5 5"/></svg>
+                </button>
+              </div>
+
+              <div class="filter-row" id="filterRow">
+                <div class="filter-chip">
+                  <span class="filter-chip-label">Collection</span>
+                  <div class="choice-menu" data-choice-id="chatSource" data-value="">
+                    <button class="choice-trigger" type="button"><span class="choice-label">All collections</span><span class="choice-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
+                    <div class="choice-popover" role="listbox">
+                      <button type="button" data-value="" data-label="All collections">All collections</button>
+                      <button type="button" data-value="DOCS" data-label="Documents">Documents</button>
+                      <button type="button" data-value="STRUCTURED" data-label="Tables and records">Tables and records</button>
+                      <button type="button" data-value="IMAGES" data-label="Images">Images</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="filter-chip">
+                  <span class="filter-chip-label">Answer style</span>
+                  <div class="choice-menu" data-choice-id="answerMode" data-value="balanced">
+                    <button class="choice-trigger" type="button"><span class="choice-label">Balanced</span><span class="choice-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></button>
+                    <div class="choice-popover" role="listbox">
+                      <button type="button" data-value="brief" data-label="Brief">Brief</button>
+                      <button type="button" data-value="balanced" data-label="Balanced">Balanced</button>
+                      <button type="button" data-value="detailed" data-label="Detailed">Detailed</button>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="filter-chip filter-advanced" id="advancedFilters" title="Open settings">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                  Advanced filters
+                </button>
+
+                <span class="filter-local-badge"><span class="dot"></span>Bound locally</span>
+              </div>
+            </form>
+
+            <div class="conversation-card glass parchment-panel reveal" id="conversationPanel" style="--d:.12s">
+              <div class="welcome-state" id="welcomeState">
+                <div class="orb bronze-orb" aria-hidden="true"><span></span></div>
+                <h2>Begin with a thread worth following.</h2>
+                <p>Ariadne traces your local evidence, keeps each journey inside its own thread, and shows the sources that hold the answer.</p>
+              </div>
+              <div id="answerPanel" class="answer-stream" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="view" id="view-threads">
+            <div class="section-intro parchment-title reveal">
+              <p class="eyebrow">Past threads</p>
+              <h2>Peer into past threads.</h2>
+              <p class="subtitle">Continue the journey from any saved path. The sidebar keeps the newest four; the archive keeps the full maze.</p>
+            </div>
+            <div class="section-card glass parchment-panel reveal" style="--d:.08s">
+              <div class="section-heading">
+                <div><p class="eyebrow">Labyrinth archive</p><h2>All past threads</h2></div>
+                <div style="display:flex;gap:10px;align-items:center;">
+                  <button id="deleteAllThreads" class="soft-button secondary-button" type="button" title="Delete every thread">Clear all</button>
+                  <button id="newChatFromThreads" class="primary-button bronze-button" type="button">New Thread</button>
+                </div>
+              </div>
+              <div id="fullThreadList" class="thread-archive-list"></div>
+            </div>
+          </section>
+
+          <section class="view" id="view-search">
+            <div class="section-intro parchment-title reveal">
+              <p class="eyebrow">Source trail</p>
+              <h2>Look into the source of each thread.</h2>
+              <p class="subtitle">Search the source trail first, then ask Ariadne to weave an answer from what the evidence holds.</p>
+            </div>
+            <div class="search-card glass parchment-panel reveal" style="--d:.08s">
+              <input id="searchQuery" type="text" placeholder="Search source names, IDs, phrases, or excerpts..." value="" />
+              <button id="searchButton" class="primary-button bronze-button" type="button">Trace Sources</button>
+            </div>
+            <div id="searchResults" class="cards-grid"></div>
+          </section>
+
+          <section class="view" id="view-sources">
+            <div class="section-card glass parchment-panel reveal">
+              <p class="eyebrow">Source trail</p>
+              <h2>What Ariadne can see</h2>
+              <p class="subtitle">A living map of documents, excerpts, and the indexes Ariadne can follow.</p>
+              <div id="sourceSummary" class="metric-grid"></div>
+              <details class="technical-details">
+                <summary>Technical details</summary>
+                <pre id="sourceStatus" class="json-block">Loading...</pre>
+              </details>
+            </div>
+          </section>
+        </section>
+
+        <aside class="insight-rail" aria-label="System panels">
+          <section class="rail-card glass parchment-panel reveal" style="--d:.05s">
+            <div class="rail-card-title">
+              <span class="rail-title-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 17l5-5-5-5M20 7l-5 5 5 5"/></svg></span>
+              <h3>Thread Readiness</h3><button type="button" aria-label="Pipeline menu">&#8942;</button>
+            </div>
+            <div class="rail-list pipeline-list" id="pipelineList">
+              <div><span class="rail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 5a7 7 0 1 0 7 7"/><path d="M12 5V2M12 5l3 2"/></svg></span><p><strong>Ingestion</strong><em data-pipe="ingestion">Checking…</em></p><b class="health-unknown" data-pipe-state="ingestion"><i class="hdot"></i>—</b></div>
+              <div><span class="rail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/><path d="M11 7h4v6"/></svg></span><p><strong>Keyword index</strong><em data-pipe="keyword">Checking…</em></p><b class="health-unknown" data-pipe-state="keyword"><i class="hdot"></i>—</b></div>
+              <div><span class="rail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg></span><p><strong>Vector index</strong><em data-pipe="vector">Checking…</em></p><b class="health-unknown" data-pipe-state="vector"><i class="hdot"></i>—</b></div>
+              <div><span class="rail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><p><strong>Local model</strong><em data-pipe="model">Checking…</em></p><b class="health-unknown" data-pipe-state="model"><i class="hdot"></i>—</b></div>
+            </div>
+            <a class="rail-link" href="#" onclick="return false;">View runs &#8594;</a>
+          </section>
+
+          <section class="rail-card glass parchment-panel reveal" style="--d:.12s">
+            <div class="rail-card-title">
+              <span class="rail-title-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h9l3 3v15H6z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg></span>
+              <h3>Sources &amp; Proof</h3><button type="button" aria-label="Sources menu">&#8942;</button>
+            </div>
+            <div class="rail-sources">
+              <span><i class="src-ic"></i>Source names guide the path<b>live</b></span>
+              <span><i class="src-ic"></i>Full paths stay in details<b>safe</b></span>
+              <span><i class="src-ic"></i>Chunk IDs stay behind the veil<b>safe</b></span>
+            </div>
+            <a class="rail-link" id="railModelName" href="#" onclick="return false;" data-rail-model>Local voice: configured &#8594;</a>
+          </section>
+
+          <section class="rail-card glass parchment-panel reveal" style="--d:.19s">
+            <div class="rail-card-title">
+              <span class="rail-title-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></span>
+              <h3>Loom Health</h3><button type="button" aria-label="Health menu">&#8942;</button>
+            </div>
+            <div class="health-metrics">
+              <div><span>Evidence path</span><strong>Hybrid</strong><svg class="spark " viewBox="0 0 64 20" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,14 8,10 16,12 24,7 32,9 40,5 48,8 56,4 64,6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div><span>External calls</span><strong>None</strong><svg class="spark " viewBox="0 0 64 20" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,12 8,13 16,11 24,12 32,10 40,11 48,10 56,11 64,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div><span>Thread map</span><strong>Ready</strong><svg class="spark " viewBox="0 0 64 20" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,15 8,11 16,13 24,8 32,10 40,6 48,9 56,5 64,7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div><span>Boundary</span><strong>On-host</strong><svg class="spark " viewBox="0 0 64 20" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,10 8,9 16,10 24,8 32,9 40,8 48,9 56,8 64,9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <a class="rail-link" href="#" onclick="return false;">View monitoring &#8594;</a>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="settingsBackdrop"></div>
+  <aside class="settings-drawer" id="settingsDrawer" aria-label="Settings drawer">
+    <div class="drawer-header">
+      <div>
+        <p class="eyebrow">Shape the view</p>
+        <h2>Display</h2>
+      </div>
+      <button id="settingsClose" class="icon-button" type="button" aria-label="Close settings">&times;</button>
+    </div>
+    <div id="settingsContent" class="settings-content"></div>
+    <div class="drawer-actions">
+      <button id="resetSettings" class="secondary-button" type="button">Reset View</button>
+      <button id="saveSettings" class="primary-button bronze-button" type="button">Save View</button>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script>
+    (function () {
+      var splash = document.getElementById("ariadneSplash");
+      if (!splash) return;
+      var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.setTimeout(function () { splash.classList.add("done"); }, reduced ? 250 : 4400);
+      window.setTimeout(function () { splash.remove(); }, reduced ? 500 : 4950);
+    })();
+  </script>
+  <script src="/static/js/thread-field.js?v=greek5"></script>
+  <script src="/static/js/shared.js?v=greek5"></script>
+  <script src="/static/js/app.js?v=greek5"></script>
+  <script>
+    document.getElementById("filterToggle")?.addEventListener("click", function () {
+      document.getElementById("filterRow")?.classList.toggle("collapsed");
+    });
+    document.getElementById("advancedFilters")?.addEventListener("click", function () {
+      document.getElementById("settingsOpen")?.click();
+    });
+  </script>
+</body>
+</html>

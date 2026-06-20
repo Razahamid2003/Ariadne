@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+PyYAML
+httpx
+python-dotenv
+openpyxl
+pypdf
+python-docx
+python-pptx
+PyMuPDF
+sentence-transformers
+numpy
+pytesseract
+Pillow
