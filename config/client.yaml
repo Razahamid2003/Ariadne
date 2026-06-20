@@ -104,7 +104,7 @@ security:
 embeddings:
   provider: "sentence_transformers"
   model_name_or_path: "sentence-transformers/all-MiniLM-L6-v2"
-  device: "cuda"
+  device: "auto"   # auto-detects GPU when a CUDA build of PyTorch is present, else CPU
   batch_size: 32
 
 vector_index:
@@ -201,7 +201,7 @@ rag:
   max_context_chunks: 6
   max_context_chars: 8000
   max_chars_per_chunk: 1800
-  drop_vector_only_below_score: 0.05
+  drop_vector_only_below_score: 0.05  # tuned: avoids over-trimming after metadata nudge renormalizes scores
   # Citation salvage: if the model writes a grounded answer but forgets the
   # [S#] tags, attribute its sentences back to retrieved chunks by lexical
   # overlap before falling back to no-answer. Honest: only cites retrieved

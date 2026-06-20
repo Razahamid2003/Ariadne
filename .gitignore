@@ -76,3 +76,7 @@ reports/*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ── Evaluation probe output (generated) ──
+eval/runs/*
+!eval/runs/.gitkeep

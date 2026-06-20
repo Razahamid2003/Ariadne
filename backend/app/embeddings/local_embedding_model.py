@@ -22,6 +22,37 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 from backend.app.core.config import EmbeddingsConfig
+from backend.app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
+
+def resolve_device(requested: str | None) -> str | None:
+    """Pick a usable device, falling back to CPU when CUDA is unavailable.
+
+    ``"auto"`` (or empty) returns ``None`` so SentenceTransformers chooses for
+    itself. ``"cuda"`` is honored only when a CUDA build of PyTorch and a GPU are
+    actually present; otherwise it degrades to CPU with a warning instead of
+    raising "Torch not compiled with CUDA enabled". Any explicit ``"cpu"`` (or
+    other value) is passed through unchanged.
+    """
+
+    if requested in (None, "", "auto"):
+        return None
+    if requested == "cuda":
+        try:
+            import torch
+
+            if not torch.cuda.is_available():
+                logger.warning(
+                    "embeddings.device is 'cuda' but CUDA is not available "
+                    "(CPU-only PyTorch or no GPU). Falling back to CPU. Install a "
+                    "CUDA build of PyTorch to use the GPU."
+                )
+                return "cpu"
+        except Exception:
+            return "cpu"
+    return requested
 
 
 @dataclass(frozen=True)
@@ -44,7 +75,7 @@ class SentenceTransformersEmbeddingModel:
         self.config = config
         self.model = SentenceTransformer(
             config.model_name_or_path,
-            device=None if config.device == "auto" else config.device,
+            device=resolve_device(config.device),
         )
 
     def encode(self, texts: list[str], show_progress_bar: bool = True) -> EmbeddingBatch:

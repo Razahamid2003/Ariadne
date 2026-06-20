@@ -94,6 +94,14 @@ class LocalReranker:
             model_name = getattr(self.settings.retrieval, "rerank_model_name_or_path", "cross-encoder/ms-marco-MiniLM-L-6-v2")
             device = getattr(self.settings.retrieval, "rerank_device", "auto")
             kwargs = {}
+            if device == "cuda":
+                try:
+                    import torch
+
+                    if not torch.cuda.is_available():
+                        device = "cpu"
+                except Exception:
+                    device = "cpu"
             if device in {"cpu", "cuda"}:
                 kwargs["device"] = device
             self._model = CrossEncoder(model_name, **kwargs)
