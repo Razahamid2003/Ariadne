@@ -1,0 +1,31 @@
+line_id,item,part_no,variant,qty,supplier,unit_cost_usd,lead_time_weeks,status
+E-001,Wideband receiver module,RX-118,Mk I,6,Caldera Microwave,48200,16,Delivered
+E-002,Wideband receiver module,RX-265,Mk II,4,Caldera Microwave,61500,20,On Order
+E-003,Wideband receiver module,RX-118N,Mk III,4,Caldera Microwave,52800,18,On Order
+E-004,Antenna assembly,ANT-A1,Mk I,6,Northbridge RF,12750,10,Delivered
+E-005,Antenna assembly,ANT-A2,Mk II,4,Northbridge RF,15900,14,Delivered
+E-006,Antenna assembly,ANT-N3,Mk III,4,Northbridge RF,18250,22,Backordered
+E-007,Signal processor unit,SPU-7,All,14,Meridian Defence Systems,27400,8,Delivered
+E-008,Filter Assembly,FA-12,Mk I,6,Caldera Microwave,3450,26,Backordered
+E-009,OCXO reference,REF-10,All,14,Tempus Components,2100,12,Delivered
+E-010,Power supply unit,PSU-28,Mk I,6,Northbridge RF,4200,9,Delivered
+E-011,Power supply unit,PSU-28X,Mk II,4,Northbridge RF,5600,11,On Order
+E-012,Power supply unit,PSU-28N,Mk III,4,Northbridge RF,6800,15,On Order
+E-013,"Cable set, RF",CBL-RF,All,20,Meridian Defence Systems,880,6,Delivered
+E-014,"Cable set, data",CBL-10G,All,20,Tempus Components,640,6,Delivered
+E-015,Recording module,REC-8,All,14,Halcyon Storage,9300,13,On Order
+E-016,Time sync module,PTP-1,All,14,Tempus Components,1750,7,Delivered
+E-017,"Chassis, ruggedised",CHS-N,Mk III,4,Meridian Defence Systems,14100,19,Backordered
+E-018,"Chassis, standard",CHS-S,Mk I,6,Meridian Defence Systems,7600,10,Delivered
+E-019,"Chassis, standard",CHS-S2,Mk II,4,Meridian Defence Systems,8900,12,Delivered
+E-020,Cooling assembly,COOL-3,Mk III,4,Northbridge RF,3300,14,On Order
+E-021,LNA module,LNA-2,Mk II,4,Caldera Microwave,5200,17,On Order
+E-022,LNA module,LNA-1,Mk I,6,Caldera Microwave,4100,16,Delivered
+E-023,Display unit,DSP-15,All,8,Halcyon Storage,2900,9,Delivered
+E-024,Calibration kit,CAL-K,All,2,Tempus Components,11800,21,On Order
+E-025,"Spares pack, level 1",SP-L1,All,3,Meridian Defence Systems,23400,10,Delivered
+E-026,"Spares pack, level 2",SP-L2,All,2,Meridian Defence Systems,41900,24,Backordered
+E-027,Transit case,TC-1,Mk I,6,Halcyon Storage,1450,8,Delivered
+E-028,Transit case,TC-3,Mk III,4,Halcyon Storage,2050,11,On Order
+E-029,GNSS disciplining unit,GNSS-D,All,14,Tempus Components,1980,13,On Order
+E-030,Firmware licence,FW-LIC,All,14,Meridian Defence Systems,3000,2,Delivered

@@ -147,6 +147,7 @@ class RAGAnswerGenerator:
                 retry=retry,
                 answer_mode=request.answer_mode,
                 conversation_context=request.conversation_context,
+                complete_table_present=bool(retrieval_diagnostics.get("complete_table_present")),
             )
             llm = await self.llm_client.generate(
                 system_prompt=prompt.system_prompt,

@@ -385,7 +385,12 @@
     } catch (err) { toast(`Failed to clear threads: ${err.message}`); }
   });
   document.getElementById("searchButton")?.addEventListener("click", runSearch);
-  document.getElementById("chatQuery")?.addEventListener("keydown", event => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") askQuestion(event); });
+  document.getElementById("chatQuery")?.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      askQuestion(event);
+    }
+  });
   window.addEventListener("ariadne:settings-saved", () => { syncUiPreferences(); refreshStatus(); });
   window.addEventListener("rags:settings-saved", () => { syncUiPreferences(); refreshStatus(); });
 

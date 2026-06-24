@@ -1,0 +1,20 @@
+# Normalise line endings so scripts always run on their target OS.
+# Without this, an editor or git can silently rewrite .bat files to LF,
+# which makes Windows cmd.exe fail in confusing ways.
+
+# Default: let git decide, normalising to LF in the repo.
+* text=auto
+
+# Windows scripts MUST be CRLF or they break under cmd.exe.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Unix shell scripts stay LF.
+*.sh  text eol=lf
+
+# Treat these as binary (never touch their bytes).
+*.png binary
+*.ico binary
+*.npy binary
+*.db  binary

@@ -97,7 +97,7 @@ def complete_tables(
                 table_docs[c.document_id] = score
 
     if not table_docs:
-        return results, {"table_completion_applied": False}
+        return results, {"table_completion_applied": False, "complete_table_present": False}
 
     added: list[RetrievalCandidate] = []
     completed: list[str] = []
@@ -122,6 +122,7 @@ def complete_tables(
 
     diagnostics = {
         "table_completion_applied": bool(added),
+        "complete_table_present": bool(table_docs),
         "tables_completed": len(completed),
         "rows_added": len(added),
     }

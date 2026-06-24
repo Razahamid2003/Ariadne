@@ -1,0 +1,25 @@
+name,role,team,clearance,site,certifications
+Dr. Faris Qureshi,Programme Manager,PM,L4,Site A,PMP
+Helena Vasquez,Systems Engineering Lead,Systems,L4,Site A,INCOSE CSEP
+Ronan Doyle,RF Engineering Lead,RF,L3,Site A,none
+Mei Tanaka,EMC Engineer,RF,L3,Site B,iNARTE EMC
+Omar Haddad,Receiver Engineer,RF,L3,Site A,none
+Petra Novak,Antenna Engineer,RF,L2,Site B,none
+Lucas Brandt,Software Lead,Software,L3,Site A,none
+Aisha Bello,Signal Processing Engineer,Software,L3,Site A,none
+Viktor Petrov,Firmware Engineer,Software,L2,Site A,none
+Sophia Reyes,Test and Evaluation Lead,Test,L3,Site C,NEBB
+Daniel Cho,Test Engineer,Test,L2,Site C,none
+Grace Okonkwo,Reliability Engineer,Systems,L3,Site A,ASQ CRE
+Tomas Reyes,Logistics Lead,Logistics,L2,Site A,none
+Yusuf Demir,Procurement Officer,Logistics,L2,Site A,none
+Ingrid Larsen,Quality Manager,Systems,L3,Site B,ASQ CQM
+Karim Mansour,Configuration Manager,Systems,L2,Site A,none
+Elena Rossi,Security Officer,Systems,L4,Site A,CISSP
+Noah Schmidt,Mechanical Engineer,RF,L2,Site B,none
+Priya Nair,Integration Engineer,Test,L2,Site C,none
+Hassan Ali,Power Systems Engineer,RF,L2,Site A,none
+Clara Mendes,Documentation Lead,PM,L1,Site A,none
+Sven Lindqvist,Network Engineer,Software,L2,Site A,none
+Maria Santos,Calibration Technician,Test,L1,Site C,none
+Jamal Idris,Field Service Engineer,Logistics,L2,Site A,none

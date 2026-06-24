@@ -47,10 +47,14 @@ class RAGPromptBuilder:
         retry: bool = False,
         answer_mode: str = "balanced",
         conversation_context: str = "",
+        complete_table_present: bool = False,
     ) -> RAGPrompt:
         normalized_mode = self._normalize_answer_mode(answer_mode)
         return RAGPrompt(
-            system_prompt=self._system_prompt(retry=retry, answer_mode=normalized_mode),
+            system_prompt=self._system_prompt(
+                retry=retry, answer_mode=normalized_mode,
+                complete_table_present=complete_table_present,
+            ),
             user_prompt=self._user_prompt(query=query, context=context, retry=retry, answer_mode=normalized_mode, conversation_context=conversation_context),
         )
 
@@ -79,13 +83,23 @@ class RAGPromptBuilder:
             "normal business user to understand the result without reading raw evidence."
         )
 
-    def _system_prompt(self, retry: bool = False, answer_mode: str = "balanced") -> str:
+    def _system_prompt(self, retry: bool = False, answer_mode: str = "balanced", complete_table_present: bool = False) -> str:
         no_answer = self.settings.rag.no_answer_message
         retry_clause = ""
         if retry:
             retry_clause = (
                 "\nYou are revising a previous invalid answer. Be stricter: every factual claim "
                 "must cite an allowed citation label exactly as provided."
+            )
+
+        table_clause = ""
+        if complete_table_present:
+            table_clause = (
+                "\nThe evidence includes a COMPLETE structured table (every row of that table is "
+                "provided, not just a sample). For questions that count, total, average, or find the "
+                "highest/lowest/longest/shortest across that table, work across ALL provided rows and "
+                "give the result. Do not reply that information is insufficient for such a question "
+                "when the complete table is present; base the count or comparison on every provided row.\n"
             )
 
         return (
@@ -112,6 +126,7 @@ class RAGPromptBuilder:
             "15. For any date/time question, use explicit dates or date ranges found in evidence. If the evidence gives only a range, answer with the range and say the end date is the listed end date, not a separately confirmed event date. Do not invent an event date.\n"
             "16. For structured rows, preserve IDs, names, fields, and certifications exactly as provided.\n"
             "17. If a question assumes something happened (for example asks why, when, or how some event occurred), first check the evidence actually supports that assumption. If the evidence does not support it, or shows the opposite, say plainly that the premise is not supported by the sources and state what the evidence does show, rather than inventing a cause or explanation.\n\n"
+            f"{table_clause}"
             "Formatting rules:\n"
             "1. Start with a direct answer, not a repeated title.\n"
             "2. Use clean Markdown: short paragraphs, bullets, and tables where helpful.\n"
