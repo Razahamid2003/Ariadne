@@ -40,14 +40,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from question_bank import QUESTIONS  # noqa: E402
 
-# Patterns that should never appear in a finished answer (raw retrieval leakage).
+# Ariadne emits citations inline as [PREFIX: doc-...-chunk-NNNN], where PREFIX is
+# the source system (DOCS, STRUCTURED, HEADS, or a folder-derived token). These are
+# intended citation markers, NOT leaked raw text, so we strip them before scanning
+# for genuine retrieval leakage.
+CITATION_MARKER = re.compile(r"\[[A-Za-z0-9_]+:\s*[^\]]*\]")
 ARTIFACT_PATTERNS = [
     re.compile(r"chunk[_-]?\d{3,}", re.I),
     re.compile(r"\bdoc[_-]?\d{3,}", re.I),
     re.compile(r"evidence_id", re.I),
-    re.compile(r"\[\[.*?\]\]"),
     re.compile(r"text_preview", re.I),
 ]
 # Phrases that signal an honest "no evidence" answer.
@@ -55,6 +57,8 @@ NO_EVIDENCE_HINTS = [
     "no answer", "not found", "no relevant", "couldn't find", "could not find",
     "don't have", "do not have", "no information", "insufficient", "not contain",
     "isn't in", "is not in", "no evidence", "unable to find", "cannot find",
+    "does not contain", "not explicitly mention", "not explicitly stated",
+    "not specified", "not available in", "not mentioned in",
 ]
 
 
@@ -91,9 +95,11 @@ def contains_any(text: str, terms: list[str]) -> list[str]:
 
 
 def find_artifacts(text: str) -> list[str]:
+    # Remove intended citation markers first so they aren't mistaken for leakage.
+    cleaned = CITATION_MARKER.sub("", text or "")
     hits = []
     for pat in ARTIFACT_PATTERNS:
-        if pat.search(text or ""):
+        if pat.search(cleaned):
             hits.append(pat.pattern)
     return hits
 
@@ -155,6 +161,12 @@ def grade(expect: dict, status_code: int, resp: dict | None, err: str | None) ->
         if all_terms and len(missing_all) == len(all_terms):
             flags.append("missing_terms")
             notes.append(f"expected all_terms absent: {all_terms}")
+        # all_required is STRICT: every listed term must appear (multi-hop / multi-fact).
+        all_required = expect.get("all_required") or []
+        missing_req = [t for t in all_required if t.lower() not in answer.lower()]
+        if missing_req:
+            flags.append("missing_terms")
+            notes.append(f"missing required terms (strict): {missing_req}")
         if status == "supported" and not citations:
             flags.append("no_citations")
             notes.append("supported answer carried no citations")
@@ -182,6 +194,14 @@ def grade(expect: dict, status_code: int, resp: dict | None, err: str | None) ->
 
 
 def run(args) -> int:
+    import importlib
+    try:
+        bank = importlib.import_module(args.bank)
+        QUESTIONS = bank.QUESTIONS
+    except Exception as exc:
+        print(f"[FATAL] Could not load question bank '{args.bank}': {exc}")
+        return 2
+
     chat_url = f"{args.base_url.rstrip('/')}/api/chat"
     search_url = f"{args.base_url.rstrip('/')}/api/search"
 
@@ -234,7 +254,8 @@ def run(args) -> int:
                         http_delete(f"{args.base_url.rstrip('/')}/api/chats/{resp['chat_id']}", args.timeout)
 
                     record = {
-                        "intent_id": q["id"], "category": q["category"], "attempt": attempt,
+                        "intent_id": q["id"], "category": q["category"],
+                        "capability": q.get("capability", q["category"]), "attempt": attempt,
                         "query": variant, "expect": q["expect"],
                         "http_status": code, "client_latency_ms": round(client_ms, 1),
                         "error": err,
@@ -334,6 +355,20 @@ def build_report(records: list[dict], intents: list[dict], args) -> str:
         out.append(f"| {cat} | {p} | {len(rs)} | {100*p/len(rs):.0f}% |")
     out.append("")
 
+    # by capability (maps to acceptance criteria / quotation requirements)
+    caps: dict[str, list[dict]] = {}
+    for r in records:
+        caps.setdefault(r.get("capability", r["category"]), []).append(r)
+    if set(caps) != set(cats):
+        out.append("## Pass rate by capability\n")
+        out.append("| Capability | Passed | Total | Rate |")
+        out.append("|---|---|---|---|")
+        for cap in sorted(caps):
+            rs = caps[cap]
+            p = sum(1 for r in rs if r["grade"]["passed"])
+            out.append(f"| {cap} | {p} | {len(rs)} | {100*p/len(rs):.0f}% |")
+        out.append("")
+
     out.append("## Weakness flags\n")
     if flags:
         out.append("| Flag | Count | Meaning |")
@@ -392,6 +427,8 @@ def build_report(records: list[dict], intents: list[dict], args) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Ariadne evaluation probe")
+    ap.add_argument("--bank", default="question_bank",
+                    help="question-bank module to load (e.g. question_bank, stress_question_bank)")
     ap.add_argument("--base-url", default="http://127.0.0.1:8080")
     ap.add_argument("--retries", type=int, default=2, help="calls per question variant")
     ap.add_argument("--answer-mode", default="balanced", choices=["brief", "balanced", "detailed"])

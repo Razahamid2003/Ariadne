@@ -247,6 +247,33 @@ class SQLiteMetadataStore:
 
         return [dict(row) for row in rows]
 
+    def list_chunks_for_document(self, document_id: str) -> list[dict[str, Any]]:
+        """Return every chunk for one document, ordered by position.
+
+        Used by table-aware retrieval to load a complete table (all rows) when a
+        query needs aggregation across rows that top-k retrieval would not all
+        surface. Returns stored rows verbatim; it does not rank or score.
+        """
+
+        self.initialize()
+
+        with self._connect() as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                """
+                SELECT
+                    chunk_id, document_id, text, source_file, source_system,
+                    record_type, title, chunk_index, sensitivity,
+                    citation_label, metadata_json
+                FROM chunks
+                WHERE document_id = ?
+                ORDER BY chunk_index ASC;
+                """,
+                (document_id,),
+            ).fetchall()
+
+        return [dict(row) for row in rows]
+
     def list_recent_chunks(self, limit: int = 5) -> list[dict[str, Any]]:
         """
         Return recent chunks for inspection.

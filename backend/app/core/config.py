@@ -320,6 +320,8 @@ class RetrievalConfig(BaseModel):
     keyword_top_k: int = 25
     final_top_k: int = 8
     min_score: float = 0.12
+    aggregation_table_completion: bool = True
+    aggregation_max_rows: int = 400
     vector_weight: float = 0.60
     keyword_weight: float = 0.40
     exact_match_boost: float = 0.20
@@ -426,6 +428,7 @@ class RAGConfig(BaseModel):
 
     max_context_chunks: int = 6
     max_context_chars: int = 8000
+    max_context_chars_table: int = 24000
     max_chars_per_chunk: int = 1800
     drop_vector_only_below_score: float = 0.30
     min_retrieval_confidence: str = "medium"

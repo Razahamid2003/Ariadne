@@ -59,9 +59,22 @@ class RAGContextBuilder:
     # Build
     # ------------------------------------------------------------------ #
     def build(self, retrieval_response: HybridSearchResponse) -> BuiltRAGContext:
+        from backend.app.retrieval.aggregation import is_table_row
+
         max_chunks = self.settings.rag.max_context_chunks
         max_chars = self.settings.rag.max_context_chars
         per_chunk_chars = self.settings.rag.max_chars_per_chunk
+
+        # When the retriever has completed a table (aggregation query), allow a
+        # larger character budget so the whole table can fit, and let table rows
+        # past the chunk-count cap. Table rows are small; the char budget still
+        # bounds total context. Non-table behaviour is unchanged.
+        has_table = any(
+            "table_completion" in getattr(c, "match_reasons", []) or is_table_row(c.record_type)
+            for c in retrieval_response.results
+        )
+        if has_table:
+            max_chars = max(max_chars, int(getattr(self.settings.rag, "max_context_chars_table", 24000)))
 
         evidence: list[EvidenceChunk] = []
         blocks: list[str] = []
@@ -73,7 +86,9 @@ class RAGContextBuilder:
 
         def add_candidate(candidate: RetrievalCandidate, neighbor: bool = False) -> bool:
             nonlocal used_chars, truncated, neighbor_context_added, dirty_spans_repaired
-            if len(evidence) >= max_chunks:
+            # Table rows are exempt from the chunk-count cap (so a complete table
+            # is not cut off mid-way); the character budget below still bounds them.
+            if len(evidence) >= max_chunks and not is_table_row(candidate.record_type):
                 truncated = True
                 return False
             if candidate.chunk_id in seen_chunk_ids:
@@ -108,9 +123,9 @@ class RAGContextBuilder:
             return True
 
         for candidate in retrieval_response.results:
-            if len(evidence) >= max_chunks:
-                truncated = True
-                break
+            # Do not stop early: add_candidate enforces the chunk cap for non-table
+            # candidates and the char budget for all, while letting table rows
+            # through so a completed table is not cut short.
             added = add_candidate(candidate, neighbor=False)
             if added and self._supports_neighbor_context(candidate):
                 for neighbor in self._neighbor_candidates(candidate, seen_chunk_ids):

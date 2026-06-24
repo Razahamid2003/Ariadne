@@ -119,6 +119,11 @@ retrieval:
   keyword_top_k: 25
   final_top_k: 8
   min_score: 0.05        # normalized 0..1 tail-trim; lowered from 0.12 to avoid over-trimming after metadata nudge renormalizes scores
+  # Table-aware retrieval: on an aggregation/counting/extreme question, load all
+  # rows of a table the retriever already surfaced so the model can reason over the
+  # whole table. Adds evidence only; it does not compute answers or boost ranking.
+  aggregation_table_completion: true
+  aggregation_max_rows: 400
 
   # Query vocabulary expansions (additive, not replacement).
   # Add informal/abbreviated terms that users type but documents don't contain.
@@ -200,6 +205,7 @@ file_tracking:
 rag:
   max_context_chunks: 6
   max_context_chars: 8000
+  max_context_chars_table: 24000   # larger budget when a full table is loaded for aggregation
   max_chars_per_chunk: 1800
   drop_vector_only_below_score: 0.05  # tuned: avoids over-trimming after metadata nudge renormalizes scores
   # Citation salvage: if the model writes a grounded answer but forgets the

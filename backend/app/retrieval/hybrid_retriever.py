@@ -52,10 +52,19 @@ class HybridRetriever:
         self._vector_index: Any | None = None
         self._embedding_model: Any | None = None
         self._reranker: Any | None = None
+        self._metadata_store: Any | None = None
 
     # ------------------------------------------------------------------ #
     # Lazy collaborators
     # ------------------------------------------------------------------ #
+    @property
+    def metadata_store(self) -> Any:
+        if self._metadata_store is None:
+            from backend.app.persistence.sqlite_metadata_store import SQLiteMetadataStore
+
+            self._metadata_store = SQLiteMetadataStore(self.settings.paths.metadata_db)
+        return self._metadata_store
+
     @property
     def keyword_index(self) -> Any:
         if self._keyword_index is None:
@@ -71,7 +80,6 @@ class HybridRetriever:
     def vector_index(self) -> Any:
         if self._vector_index is None:
             from backend.app.indexing.vector_index import LocalVectorIndex
-
             self._vector_index = LocalVectorIndex(
                 index_dir=self.settings.vector_index.index_dir,
                 embeddings_file=self.settings.vector_index.embeddings_file,
@@ -165,12 +173,31 @@ class HybridRetriever:
             filtered = reranked[: min(final_top_k, len(reranked))]
 
         final_results = filtered[:final_top_k]
+
+        # Confidence is estimated on the genuinely ranked results, before any
+        # table-completion rows are appended, so completion can never move the gate.
         confidence = estimate_confidence(
             final_results,
             rerank_used=bool(rerank_diag.get("reranker_used")),
             high_score=getattr(cfg, "confidence_high_score", 0.55),
             medium_score=getattr(cfg, "confidence_medium_score", 0.35),
         )
+
+        # Table-aware completion: when the question is about counting / totalling /
+        # enumerating / extremes AND the retriever already surfaced one or more
+        # tables, load the remaining rows of those tables so the model can reason
+        # over the whole table. This adds evidence; it does not rank, score, or
+        # compute the answer. Off unless enabled in config.
+        aggregation_diag: dict[str, Any] = {"table_completion_applied": False}
+        if getattr(cfg, "aggregation_table_completion", True):
+            from backend.app.retrieval.aggregation import complete_tables, is_aggregation_query
+
+            if is_aggregation_query(query):
+                final_results, aggregation_diag = complete_tables(
+                    final_results,
+                    self.metadata_store,
+                    max_rows=int(getattr(cfg, "aggregation_max_rows", 400)),
+                )
 
         diagnostics = {
             "vector_candidates": len(vector_candidates),
@@ -185,6 +212,7 @@ class HybridRetriever:
             "keyword_weight": cfg.keyword_weight,
             "min_score": cfg.min_score,
             **rerank_diag,
+            **aggregation_diag,
         }
 
         return HybridSearchResponse(

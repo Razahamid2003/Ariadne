@@ -12,6 +12,45 @@ debug traces for finding bugs and weaknesses.
 | `ariadne_probe.py` | The probe: runs every variant with retries, records the full chat + raw-retrieval debug per call, grades it, flags weaknesses, checks determinism, and writes a report. |
 | `runs/` | Generated output (one JSONL deep log + one Markdown report per run). |
 
+## Two suites
+
+There are two question banks. Select one with `--bank`.
+
+| Bank | Corpus | What it tests |
+|---|---|---|
+| `question_bank` (default) | `test_corpus/` | Baseline correctness — single-fact lookups, paraphrases, simple cross-doc, honest refusal. A quick sanity check. |
+| `stress_question_bank` | `stress_corpus/` | **The hard one.** A dense, cross-linked defence-programme corpus (a System Requirements Spec, an Acceptance Test Report, a 30-row equipment register, a personnel roster, a subsystem-ownership map, dated review minutes, a contract summary, and a scanned memo image). Questions demand multi-hop reasoning, table aggregation, requirement traceability, disambiguation between Mk I/II/III variants, temporal reasoning, clause extraction, OCR, and resistance to plausible false premises. |
+
+### Running the stress suite
+
+```bat
+copy eval\stress_corpus\* data\input\
+ingest.bat
+start.bat
+```
+```bash
+python eval/ariadne_probe.py --bank stress_question_bank
+python eval/ariadne_probe.py --bank stress_question_bank --answer-mode detailed --retries 3
+python eval/ariadne_probe.py --bank stress_question_bank --only-category multi_hop
+```
+
+The stress report adds a **Pass rate by capability** table (multi_hop, table_aggregation,
+traceability, disambiguation, temporal, cross_reference, clause_extraction, ocr,
+negation_exception, false_premise, honest_refusal), so you can read performance
+against each kind of acceptance criterion rather than just an overall number.
+
+### What makes these questions hard
+
+- **Multi-hop:** "The Mk I failed one EMC requirement - which requirement, who owns that subsystem, and the lead time of the part to fix it?" chains test report -> ownership map -> equipment register (SR-022 -> Mei Tanaka -> FA-12, 26 weeks).
+- **Disambiguation:** the three variants share most parameters; a Mk III power question must not return the Mk I/II value.
+- **Table aggregation:** "how many items are backordered?", "total antenna quantity", "longest-lead item" - reading across many CSV rows.
+- **Traceability:** "Did the Mk III pass detection range, and what margin?" (+2.2 km).
+- **Temporal:** "Which action items were open after the May review?" / "which is blocked by a parts delay?".
+- **OCR:** the verbal-approval fact (Brigadier R. Salim, 14 April) exists ONLY in the scanned memo image - a correct answer proves the OCR path works end to end. Ensure `ocr.enabled: true`.
+- **False premise:** "Why did the Mk III fail its radiated-emissions test?" - it passed (only the Mk I failed). A correct system refuses rather than inventing a cause.
+
+---
+
 ## How to run it
 
 **1. Index the test corpus.** Copy the corpus into your input folder and rebuild:
