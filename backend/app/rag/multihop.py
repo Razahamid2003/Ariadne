@@ -23,12 +23,15 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from backend.app.core.logging import get_logger
 from backend.app.retrieval.fusion import estimate_confidence
 from backend.app.retrieval.models import (
     HybridSearchRequest,
     HybridSearchResponse,
     RetrievalCandidate,
 )
+
+logger = get_logger(__name__)
 
 # ---------------------------------------------------------------------------- #
 # Trigger heuristic (generic English structure only — no corpus terms, no answers)
@@ -116,9 +119,11 @@ async def _decompose(query: str, llm_client: Any, max_subq: int) -> list[str]:
             system_prompt=_DECOMPOSE_SYSTEM.format(max_subq=max_subq),
             user_prompt=query,
         )
-    except Exception:
+    except Exception as exc:
+        logger.warning("multihop decompose LLM call failed: %s", exc)
         return []
     if getattr(llm, "status", None) != "ok":
+        logger.warning("multihop decompose LLM error: %s", getattr(llm, "error", "unknown"))
         return []
     return _parse_subquestions(getattr(llm, "text", "") or "", max_subq)
 
@@ -218,35 +223,6 @@ def _bridge_retrieve(
         except Exception:
             continue
     return new_candidates
-
-
-def _bridge_candidates_rare_first(candidates: list[RetrievalCandidate], top_n: int = 12) -> list[str]:
-    """Code-like entity tokens ranked RARE-FIRST (fewest mentions first).
-
-    The bridge entity you need to look up is typically *mentioned but not
-    elaborated* — it appears once (a pointer, e.g. "install Filter Assembly FA-12")
-    while the current topic's identifiers appear repeatedly (e.g. SR-022 across the
-    failure, its root cause, its retest). Ranking rare-first surfaces the
-    unelaborated pointer (FA-12) ahead of the already-covered topic IDs. Generic:
-    no corpus knowledge, no hardcoding.
-    """
-    freq: dict[str, int] = {}
-    first_seen: dict[str, int] = {}
-    order = 0
-    for c in candidates[:top_n]:
-        for tok in _TOKEN_RE.findall(c.text or ""):
-            t = tok.strip(".-")
-            if len(t) < 2 or t.lower() in _STOPWORDS:
-                continue
-            has_digit = any(ch.isdigit() for ch in t)
-            if not _is_code(t):
-                continue  # code-like only: must have BOTH a letter and a digit
-                          # (excludes bare numbers like 10, 26, 3450)
-            freq[t] = freq.get(t, 0) + 1
-            if t not in first_seen:
-                first_seen[t] = order
-                order += 1
-    return [t for t, _ in sorted(freq.items(), key=lambda kv: (kv[1], first_seen[kv[0]]))]
 
 
 def _dedupe(candidates: list[RetrievalCandidate]) -> list[RetrievalCandidate]:
@@ -352,34 +328,34 @@ async def run_multihop_decompose(
         return None
 
 
-# ---------------------------------------------------------------------------- #
-# Phase 3 — iterative retrieve-read (Mode B)
-# ---------------------------------------------------------------------------- #
-# Standard iterative-RAG loop: each iteration generates a query, retrieves and
-# reranks, and the model reads what was found before deciding the next query or
-# stopping. Anti-drift: hop 1 always retrieves the ORIGINAL query. Anti-laziness /
-# convergence: stop when a hop adds no new chunks, when the model says it can
-# answer, or at the hop cap. The model forms each follow-up query from the
-# evidence it has just read (this is what lets "...the fix part is FA-12" become
-# the next query "FA-12 lead time"). No corpus knowledge, no hardcoding.
-
-_REFLECT_SYSTEM = (
-    "You are gathering evidence to answer a question. You are given the original "
-    "question, the evidence found so far, and a list of candidate terms found in the "
-    "evidence that you could look up next.\n"
-    "- If the evidence already fully answers the original question, reply with exactly "
-    "the single word: ANSWERABLE\n"
-    "- Otherwise reply with EXACTLY ONE term, copied verbatim from the candidate list — "
-    "the term whose details are most needed to answer the question (for example, if the "
-    "question asks for the lead time of a part and the evidence names that part, choose "
-    "the part's identifier).\n"
-    "Output ONLY the single word ANSWERABLE or one candidate term. No other text."
-)
+def _subanswer_context(candidates: list[RetrievalCandidate], max_chunks: int = 5,
+                       per_chunk: int = 1200, total_cap: int = 6000) -> str:
+    """Context for the sub-answer extraction step. Unlike the compact digest, this
+    PRESERVES newlines/table structure and gives each chunk generous room, because
+    the answer often sits in a specific table row (e.g. the ownership map's
+    '| RF front-end and EMC compliance | Mei Tanaka |'). Collapsing newlines or
+    truncating to a few hundred chars would cut the answer off — which is exactly
+    what caused every sub-answer to come back empty."""
+    blocks: list[str] = []
+    used = 0
+    for c in candidates[:max_chunks]:
+        text = (c.text or "").strip()
+        if len(text) > per_chunk:
+            text = text[:per_chunk] + "…"
+        if used + len(text) > total_cap:
+            text = text[: max(0, total_cap - used)]
+        if not text:
+            break
+        blocks.append(text)
+        used += len(text)
+        if used >= total_cap:
+            break
+    return "\n\n---\n\n".join(blocks)
 
 
 def _evidence_digest(candidates: list[RetrievalCandidate], max_chunks: int = 8, per_chunk: int = 240) -> str:
-    """Compact view of evidence for the reflection step. Kept small to avoid the
-    'retrieval laziness' that grows with context length."""
+    """Compact view of retrieved evidence for a sub-question answer step. Kept small
+    to avoid the 'retrieval laziness' that grows with context length."""
     lines = []
     for c in candidates[:max_chunks]:
         text = (c.text or "").replace("\n", " ").strip()
@@ -387,54 +363,6 @@ def _evidence_digest(candidates: list[RetrievalCandidate], max_chunks: int = 8, 
             text = text[:per_chunk] + "…"
         lines.append(f"- {text}")
     return "\n".join(lines)
-
-
-def _term_already_searched(term: str, history: list[str]) -> bool:
-    tl = term.lower()
-    return any(tl == h.lower() or tl in h.lower() for h in history)
-
-
-async def _reflect_choose(
-    query: str,
-    history: list[str],
-    evidence: list[RetrievalCandidate],
-    candidates: list[str],
-    llm_client: Any,
-) -> str | None:
-    """Choose the next bridge term to search from a fixed candidate list, or None
-    if answerable / no candidates. The query is constrained to a real candidate
-    entity, which prevents the weak model from drifting into echoing source text.
-    Falls back to the top un-searched candidate if the model's reply is unusable."""
-    if not candidates:
-        return None
-    user = (
-        f"Original question: {query}\n\n"
-        f"Evidence gathered so far:\n{_evidence_digest(evidence)}\n\n"
-        f"Candidate terms: {', '.join(candidates)}\n\n"
-        "Reply ANSWERABLE or one candidate term."
-    )
-    choice = None
-    try:
-        llm = await llm_client.generate(system_prompt=_REFLECT_SYSTEM, user_prompt=user)
-        if getattr(llm, "status", None) == "ok":
-            text = (getattr(llm, "text", "") or "").strip()
-            if "ANSWERABLE" in text.upper():
-                return None
-            # Accept the model's choice only if it names a real candidate term.
-            low = text.lower()
-            for c in candidates:
-                if c.lower() in low:
-                    choice = c
-                    break
-    except Exception:
-        choice = None
-    # Fallback: if the model didn't pick a valid term, take the top un-searched one.
-    if choice is None:
-        for c in candidates:
-            if not _term_already_searched(c, history):
-                choice = c
-                break
-    return choice
 
 
 _SUBANSWER_SYSTEM = (
@@ -452,37 +380,53 @@ async def _answer_subquestion(
     evidence: list[RetrievalCandidate],
     llm_client: Any,
 ) -> str:
-    """Short extractive answer to one sub-question, answered IN CONTEXT of the
-    overall question and what has already been established. The context matters:
-    when a document lists several similar items (e.g. two different test failures,
-    each with its own corrective part), the bare sub-question can't tell which one
-    applies — but the original question and prior answers pin it down. Returns ''
-    when unknown. This answer is carried into later retrievals."""
+    """Short extractive answer to one sub-question from its retrieved context.
+
+    Deliberately a SIMPLE prompt. A heavier prompt (original question + an
+    'already established' block) helps a large model disambiguate but makes a small
+    local model (e.g. llama3.1:8b) bail to UNKNOWN on every hop — regressing all
+    sub-answers to empty. Disambiguation is instead handled upstream: the
+    decomposer is instructed to carry each distinguishing qualifier into every
+    sub-question (so the sub-question already says 'the part for the
+    radiated-emissions test failure'), which keeps this step's prompt light enough
+    for a small model while still selecting the right item. Returns '' when unknown;
+    the answer is carried into later retrievals.
+
+    original_query and prior_qa are accepted for interface stability and light
+    optional use; they are intentionally NOT injected into the prompt body.
+    """
     if not evidence:
         return ""
-    ctx = _evidence_digest(evidence, max_chunks=6, per_chunk=300)
-    established = ""
-    if prior_qa:
-        established = "Already established:\n" + "\n".join(
-            f"- {q} -> {a}" for q, a in prior_qa if a
-        ) + "\n\n"
-    user = (
-        f"Overall question: {original_query}\n\n"
-        f"{established}"
-        f"Context:\n{ctx}\n\n"
-        f"Now answer only this specific sub-question, consistent with the overall "
-        f"question and what is already established: {sq}\n\n"
-        f"Short answer:"
-    )
+    if llm_client is None:
+        logger.error("multihop sub-answer: llm_client is None — check wiring in answer_generator.py")
+        return ""
+    ctx = _subanswer_context(evidence, max_chunks=5, per_chunk=1200, total_cap=6000)
+    user = f"Context:\n{ctx}\n\nQuestion: {sq}\n\nShort answer:"
     try:
         llm = await llm_client.generate(system_prompt=_SUBANSWER_SYSTEM, user_prompt=user)
-    except Exception:
+    except Exception as exc:
+        logger.warning("multihop sub-answer LLM call failed: %s", exc)
         return ""
     if getattr(llm, "status", None) != "ok":
+        logger.warning("multihop sub-answer LLM error: %s", getattr(llm, "error", "unknown"))
         return ""
-    text = (getattr(llm, "text", "") or "").strip().strip('"').strip()
-    first = text.splitlines()[0].strip() if text else ""
-    if not first or first.upper().startswith("UNKNOWN"):
+    text = (getattr(llm, "text", "") or "").strip()
+    if not text:
+        return ""
+    # Take the first non-empty line and strip common small-model lead-ins so a
+    # preamble like "Answer:" or "The answer is:" doesn't get treated as the value.
+    first = ""
+    for line in text.splitlines():
+        s = line.strip().strip('"').strip("*").strip()
+        if s:
+            first = s
+            break
+    low = first.lower()
+    for lead in ("short answer:", "answer:", "the answer is", "the part is", "it is"):
+        if low.startswith(lead):
+            first = first[len(lead):].strip(" :\"'")
+            low = first.lower()
+    if not first or low.startswith("unknown") or low == "n/a" or low == "none":
         return ""
     # Keep it short — a carried answer is an entity/phrase, not a paragraph.
     return first[:80]
@@ -517,6 +461,7 @@ async def run_multihop_iterative(
         prior_qa: list[tuple[str, str]] = []  # (sub-question, answer) established so far
         queries_run: list[str] = []
         sub_answers: list[str] = []
+        focused_entities: set[str] = set()  # entities already given a clean focus retrieval
 
         for sq in subqs:
             # Carry prior answers into the retrieval query so a sub-question that
@@ -537,7 +482,51 @@ async def run_multihop_iterative(
                 )
             except Exception:
                 continue
-            hits = resp.results
+            hits = list(resp.results)
+            # Focused entity retrieval. The natural-language sub-question dilutes a
+            # carried entity (e.g. "FA-12") among many words — "lead time of the part
+            # ... Mei Tanaka FA-12" — so the entity's OWN record (its row in the
+            # equipment register) is outranked and never retrieved. Fire a SECOND
+            # query on just the single most-specific carried entity so that record
+            # surfaces cleanly, then merge. Prefer a code-like identifier (letter+
+            # digit, e.g. FA-12) since that keyword-matches a specific row; fall back
+            # to the freshest whole answer. Retrieval only, no LLM. The carried entity
+            # comes from the model's own verified sub-answers — not corpus knowledge.
+            focus_q = ""
+            for ans_text in reversed(carried):  # freshest first
+                for tok in _TOKEN_RE.findall(ans_text):
+                    t = tok.strip(".-")
+                    if _is_code(t):
+                        focus_q = t
+                        break
+                if focus_q:
+                    break
+            if not focus_q and carried:
+                focus_q = carried[-1]
+            # Fire the focused query whenever the entity is one we haven't already
+            # searched cleanly — NOT gated on whether it appears in the diluted main
+            # query (it usually does; that dilution is the whole problem we're
+            # solving). De-duplication of results is handled below.
+            if focus_q and focus_q.lower() not in focused_entities:
+                focused_entities.add(focus_q.lower())
+                queries_run.append(f"[focus] {focus_q}")
+                try:
+                    fresp = retriever.search(
+                        HybridSearchRequest(
+                            query=focus_q,
+                            top_k=per_subq_top_k,
+                            source_system=request.source_system,
+                            record_type=request.record_type,
+                            allow_table_completion=False,
+                        )
+                    )
+                    have = {c.chunk_id for c in hits}
+                    for c in fresp.results:
+                        if c.chunk_id not in have:
+                            hits.append(c)
+                            have.add(c.chunk_id)
+                except Exception:
+                    pass
             for c in hits:
                 if c.chunk_id not in seen:
                     seen.add(c.chunk_id)

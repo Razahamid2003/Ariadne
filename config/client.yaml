@@ -24,7 +24,7 @@ llm:
   base_url: "http://localhost:11434/v1"
   model: "llama3.1:8b"
   temperature: 0.1
-  max_tokens: 700
+  max_tokens: 1500
   timeout_seconds: 120
 
 paths:
@@ -136,29 +136,19 @@ retrieval:
   multihop_per_subq_top_k: 6
 
   # Query vocabulary expansions (additive, not replacement).
-  # Add informal/abbreviated terms that users type but documents don't contain.
-  # Keys are matched case-insensitively on word boundaries.
+  # POLICY: only GENERAL abbreviation -> literal-full-form mappings that would hold
+  # for ANY corpus in this domain. Do NOT add corpus-specific vocabulary, terms
+  # taken from particular documents, or phrasings reverse-engineered from eval
+  # questions — those are hints that inflate eval scores and do not transfer to the
+  # client's real corpus. Keys are matched case-insensitively on word boundaries.
   query_expansions:
-    "fresh grad": "recently graduated BS Computer Science LUMS"
-    "fresh graduate": "recently graduated BS Computer Science"
-    "recent graduate": "recently graduated BS Computer Science LUMS"
-    "grad": "graduate"
-    "ml engineer": "machine learning engineer"
-    "ai ml": "artificial intelligence machine learning MLOps RAG NLP"
-    "ai or ml": "artificial intelligence machine learning MLOps RAG"
-    "ai and ml": "artificial intelligence machine learning"
     "nlp": "natural language processing"
     "llm": "large language model"
     "rag": "retrieval augmented generation"
     "mlops": "machine learning operations"
-    "cv": "curriculum vitae resume profile"
+    "ml engineer": "machine learning engineer"
     "poc": "proof of concept"
-    "aviation specialist": "aviation engineer pilot UAV UAS aerospace"
-    "aviation specialists": "aviation engineer pilot UAV UAS aerospace"
-    "looks like a recent graduate": "recently graduated BS Computer Science LUMS curriculum vitae"
-    "indexed person": "employee candidate profile curriculum vitae"
-    "currently available": "available shift availability"
-    "availability": "available from shift next shift"
+    "grad": "graduate"
   vector_weight: 0.60
   keyword_weight: 0.40
   exact_match_boost: 0.20
