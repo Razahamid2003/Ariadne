@@ -16,6 +16,19 @@ expect fields:
 """
 
 QUESTIONS = [
+    {
+        "id": "mh_emc_owner_leadtime",
+        "capability": "multi_hop",
+        "category": "multi_hop",
+        "variants": [
+            "Which engineer owns the subsystem that failed the radiated-emissions test, and what is the lead time of the part required to fix it?",
+            "Who is responsible for the subsystem that failed radiated emissions, and how long is the lead time on the part needed to fix it?",
+        ],
+        "expect": {
+            "answerable": True,
+            "all_required": ["Tanaka", "FA-12", "26"],
+        },
+    },
     # ---------- numeric_precision (exact value among many similar) ----------
     {"id": "danl_mk2", "category": "numeric_precision", "capability": "numeric_precision",
      "variants": ["What is the specified DANL for the SPECTRA-300 Mk II?",

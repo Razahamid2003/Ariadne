@@ -45,6 +45,7 @@ class HybridSearchRequest:
     source_system: str | None = None
     record_type: str | None = None
     target_document_types: tuple[str, ...] = ()
+    allow_table_completion: bool = True
 
 
 @dataclass

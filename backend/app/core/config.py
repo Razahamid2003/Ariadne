@@ -322,6 +322,14 @@ class RetrievalConfig(BaseModel):
     min_score: float = 0.12
     aggregation_table_completion: bool = True
     aggregation_max_rows: int = 400
+    # Multi-hop retrieval (Phase 0/1: decompose-then-retrieve). Off by default;
+    # when off, behaviour is exactly single-pass. See ARIADNE_MULTIHOP_PLAN.
+    multihop_enabled: bool = False
+    multihop_mode: str = "decompose"        # "decompose" (Phase 1) | "iterative" (Phase 3)
+    multihop_max_subquestions: int = 4
+    multihop_max_hops: int = 3
+    multihop_min_trigger: str = "auto"       # "auto" (heuristic gate) | "always"
+    multihop_per_subq_top_k: int = 6
     vector_weight: float = 0.60
     keyword_weight: float = 0.40
     exact_match_boost: float = 0.20

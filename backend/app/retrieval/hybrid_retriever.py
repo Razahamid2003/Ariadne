@@ -189,7 +189,7 @@ class HybridRetriever:
         # over the whole table. This adds evidence; it does not rank, score, or
         # compute the answer. Off unless enabled in config.
         aggregation_diag: dict[str, Any] = {"table_completion_applied": False, "complete_table_present": False}
-        if getattr(cfg, "aggregation_table_completion", True):
+        if getattr(cfg, "aggregation_table_completion", True) and getattr(request, "allow_table_completion", True):
             from backend.app.retrieval.aggregation import complete_tables, is_aggregation_query
 
             if is_aggregation_query(query):

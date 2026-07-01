@@ -63,12 +63,14 @@ def get_index_lifecycle_status(
         with vector_metadata_path.open("r", encoding="utf-8") as file:
             vector_metadata_rows = sum(1 for line in file if line.strip())
 
-    keyword_status = "fresh" if keyword_exists and keyword_rows == chunks_count else "stale"
-    vector_status = (
-        "fresh"
-        if vector_rows == chunks_count and vector_metadata_rows == chunks_count and chunks_count > 0
-        else "stale"
-    )
+    # "Ready" means the index is built and populated (usable for retrieval). Exact
+    # row-vs-chunk equality is a freshness signal, not a built/not-built signal, and
+    # requiring it leaves the panel stuck on "Pending" whenever a few chunk types are
+    # not indexed (which is normal). So readiness is existence + non-empty.
+    keyword_status = "ready" if keyword_exists and keyword_rows > 0 else "stale"
+    vector_status = "ready" if vector_rows > 0 and vector_metadata_rows > 0 else "stale"
+    keyword_fresh = keyword_exists and keyword_rows == chunks_count
+    vector_fresh = vector_rows == chunks_count and vector_metadata_rows == chunks_count and chunks_count > 0
 
     return {
         "metadata": {
@@ -82,6 +84,7 @@ def get_index_lifecycle_status(
             "exists": keyword_exists,
             "rows": keyword_rows,
             "status": keyword_status,
+            "fresh": keyword_fresh,
         },
         "vector_index": {
             "index_dir": str(vector_dir),
@@ -91,8 +94,14 @@ def get_index_lifecycle_status(
             "vector_dimension": vector_dimension,
             "metadata_rows": vector_metadata_rows,
             "status": vector_status,
+            "fresh": vector_fresh,
         },
-        "overall_status": "fresh" if keyword_status == "fresh" and vector_status == "fresh" else "stale",
+        "overall_status": "ready" if keyword_status == "ready" and vector_status == "ready" else "stale",
+        # Flat aliases: the main "Thread Readiness" panel (app.js) reads these flat
+        # keys, while admin.js reads the nested *_index.status above. Emit both so
+        # every UI surface shows the same, correct state.
+        "keyword_index_status": keyword_status,
+        "vector_index_status": vector_status,
     }
 
 

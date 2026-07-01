@@ -124,6 +124,16 @@ retrieval:
   # whole table. Adds evidence only; it does not compute answers or boost ranking.
   aggregation_table_completion: true
   aggregation_max_rows: 400
+  # Multi-hop retrieval. Off = single-pass (today's behaviour). When enabled, a complex
+  # question is decomposed by the model into self-contained sub-questions, each retrieved
+  # with the same retriever; the merged pool is re-ranked by the same cross-encoder.
+  # Adds evidence completeness only; it does not compute answers or boost ranking.
+  multihop_enabled: true
+  multihop_mode: iterative          # iterative (Phase 3, handles bridges) | decompose (cheaper)
+  multihop_max_subquestions: 4
+  multihop_max_hops: 4
+  multihop_min_trigger: auto        # auto (heuristic gate) | always
+  multihop_per_subq_top_k: 6
 
   # Query vocabulary expansions (additive, not replacement).
   # Add informal/abbreviated terms that users type but documents don't contain.

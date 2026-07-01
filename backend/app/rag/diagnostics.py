@@ -30,7 +30,15 @@ def strip_multihop_diagnostics(value: Any) -> Any:
     return value
 
 def single_pass_diagnostics(diagnostics: dict[str, Any] | None) -> dict[str, Any]:
-    clean = strip_multihop_diagnostics(diagnostics or {})
+    d = diagnostics or {}
+    # If a multi-hop pass actually ran, report it honestly: keep its fields and do
+    # not stamp the single-pass markers. (Set by the multi-hop orchestrator.)
+    if isinstance(d, dict) and d.get("multihop_applied"):
+        out = dict(d)
+        out.setdefault("single_pass_rag", False)
+        out.setdefault("automatic_multihop_disabled", False)
+        return out
+    clean = strip_multihop_diagnostics(d)
     if not isinstance(clean, dict):
         clean = {}
     clean["single_pass_rag"] = True

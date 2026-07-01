@@ -126,6 +126,7 @@ class RAGPromptBuilder:
             "15. For any date/time question, use explicit dates or date ranges found in evidence. If the evidence gives only a range, answer with the range and say the end date is the listed end date, not a separately confirmed event date. Do not invent an event date.\n"
             "16. For structured rows, preserve IDs, names, fields, and certifications exactly as provided.\n"
             "17. If a question assumes something happened (for example asks why, when, or how some event occurred), first check the evidence actually supports that assumption. If the evidence does not support it, or shows the opposite, say plainly that the premise is not supported by the sources and state what the evidence does show, rather than inventing a cause or explanation.\n\n"
+            "18. If a specific value (such as a lead time, quantity, or date) for a specific named item is not present in the evidence, state that it is not in the provided evidence. Do not substitute values from other items or estimate from similar entries.\n\n"
             f"{table_clause}"
             "Formatting rules:\n"
             "1. Start with a direct answer, not a repeated title.\n"

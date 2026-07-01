@@ -38,6 +38,7 @@ from backend.app.rag.models import (
 from backend.app.rag.prompt_builder import RAGPromptBuilder
 from backend.app.retrieval.hybrid_retriever import HybridRetriever
 from backend.app.retrieval.models import HybridSearchRequest
+from backend.app.rag.multihop import run_multihop, should_try_multihop, is_low_confidence
 
 CONFIDENCE_ORDER = {"low": 0, "medium": 1, "high": 2}
 SHORT_LABEL_PATTERN = re.compile(r"[\[\(]\s*(S\d+)\s*[\]\)]", re.IGNORECASE)
@@ -91,15 +92,42 @@ class RAGAnswerGenerator:
     # ------------------------------------------------------------------ #
     async def answer(self, request: RAGAnswerRequest) -> RAGAnswerResponse:
         target_types = await self._classify_query_intent(request.query)
-        retrieval = self.retriever.search(
-            HybridSearchRequest(
-                query=request.query,
-                top_k=request.top_k,
-                source_system=request.source_system,
-                record_type=request.record_type,
-                target_document_types=tuple(target_types),
+
+        # Multi-hop (decompose or iterative) runs only when enabled and the gate
+        # fires; it wraps the same retriever and reranker. On any miss or failure it
+        # returns None and we fall through to the unchanged single-pass retrieval.
+        retrieval = None
+        gate_fired = should_try_multihop(request.query, self.settings)
+        if gate_fired:
+            retrieval = await run_multihop(
+                request, self.retriever, self.llm_client, self.settings
             )
-        )
+
+        if retrieval is None:
+            retrieval = self.retriever.search(
+                HybridSearchRequest(
+                    query=request.query,
+                    top_k=request.top_k,
+                    source_system=request.source_system,
+                    record_type=request.record_type,
+                    target_document_types=tuple(target_types),
+                )
+            )
+            # Phase 2: if the heuristic gate did not fire but single-pass came back
+            # weak, escalate to multi-hop (auto trigger only). The original-query
+            # single-pass above doubles as the anti-drift round-one retrieval.
+            cfg = self.settings.retrieval
+            if (
+                getattr(cfg, "multihop_enabled", False)
+                and getattr(cfg, "multihop_min_trigger", "auto") == "auto"
+                and not gate_fired
+                and is_low_confidence(retrieval.confidence)
+            ):
+                escalated = await run_multihop(
+                    request, self.retriever, self.llm_client, self.settings
+                )
+                if escalated is not None:
+                    retrieval = escalated
 
         prior = self._reconstruct_prior_evidence(request.prior_evidence)
 
